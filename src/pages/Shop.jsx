@@ -8,11 +8,10 @@ import { COLLECTION_PRODUCTS } from "../data/collection";
 
 export default function Shop() {
   const [products, setProducts] = useState(COLLECTION_PRODUCTS);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
-    setLoading(true);
     getProducts()
       .then((list) => {
         if (cancelled) return;
@@ -20,9 +19,6 @@ export default function Shop() {
       })
       .catch(() => {
         if (!cancelled) setProducts(COLLECTION_PRODUCTS);
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
       });
     return () => { cancelled = true; };
   }, []);

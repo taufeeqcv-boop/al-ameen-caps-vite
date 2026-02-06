@@ -39,5 +39,5 @@ In **Supabase Dashboard → Authentication → URL Configuration**:
 If you see this error when signing in with Google, the Supabase project URL cannot be resolved:
 
 - **Check project status**: Supabase free-tier projects are paused after 7 days of inactivity. Go to [Supabase Dashboard](https://supabase.com/dashboard) and ensure the project is active.
-- **Verify VITE_SUPABASE_URL**: It must match exactly the Project URL from Supabase (e.g. `https://fswivlxhqonscymszwre.supabase.co`).
+- **Verify VITE_SUPABASE_URL**: It must match exactly the Project URL from Supabase (e.g. `https://YOUR_PROJECT_REF.supabase.co`). If you see `DNS_PROBE_FINISHED_NXDOMAIN`, the project may be paused, deleted, or the URL is wrong — check [Supabase Dashboard](https://supabase.com/dashboard).
 - **Redeploy after env changes**: Netlify builds with env vars at build time. After changing `VITE_SUPABASE_*`, trigger a new deploy.

@@ -5,8 +5,10 @@ import { Link } from "react-router-dom";
 import { useCart } from "../context/CartContext";
 import { formatPrice } from "../lib/format";
 
+const enableEcommerce = import.meta.env.VITE_ENABLE_ECOMMERCE === 'true';
+
 export default function CartSidebar({ isOpen, onClose }) {
-  const { cart, removeFromCart, updateQuantity, cartTotal } = useCart();
+  const { cart, removeFromCart, updateQuantity, cartTotal, getItemPrice } = useCart();
 
   useEffect(() => {
     if (!isOpen) return;
@@ -35,7 +37,7 @@ export default function CartSidebar({ isOpen, onClose }) {
           ) : (
             <ul className="space-y-4">
               {cart.map((item, i) => {
-                const price = Number(item.price) || 0;
+                const price = getItemPrice(item);
                 const qty = item.quantity || 1;
                 return (
                   <li key={`${item.id ?? "item"}-${i}`} className="flex justify-between items-start gap-4 border-b border-black/10 pb-4">
@@ -79,7 +81,7 @@ export default function CartSidebar({ isOpen, onClose }) {
               onClick={onClose}
               className="btn-primary mt-4 w-full py-3.5 text-center block"
             >
-              Checkout
+              {enableEcommerce ? 'Checkout' : 'Proceed to Reservation'}
             </Link>
           </div>
         )}

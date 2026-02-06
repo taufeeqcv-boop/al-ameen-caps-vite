@@ -8,8 +8,16 @@ const CartContext = createContext(null);
 const CART_STORAGE_KEY = "alameen-caps-cart";
 
 function getCurrentPrice(productId) {
+  if (!productId) return 0;
   const product = COLLECTION_PRODUCTS.find((p) => p.id === productId);
   return product != null ? Number(product.price) || 0 : 0;
+}
+
+/** Resolve price for cart item: use collection lookup or stored price, whichever is valid */
+function getItemPrice(item) {
+  const lookedUp = getCurrentPrice(item?.id);
+  const stored = Number(item?.price) || 0;
+  return Math.max(lookedUp, stored);
 }
 
 function normalizeItem(item) {
@@ -65,17 +73,13 @@ export function CartProvider({ children }) {
   const updateQuantity = (index, quantity) => dispatch({ type: "UPDATE_QUANTITY", payload: { index, quantity } });
   const clearCart = () => dispatch({ type: "CLEAR" });
   const cartTotal = useMemo(
-    () =>
-      cart.reduce((sum, item) => {
-        const freshPrice = getCurrentPrice(item.id) || Number(item.price) || 0;
-        return sum + freshPrice * (item.quantity || 1);
-      }, 0),
+    () => cart.reduce((sum, item) => sum + getItemPrice(item) * (item.quantity || 1), 0),
     [cart]
   );
   const cartCount = cart.reduce((sum, item) => sum + (item.quantity || 1), 0);
 
   return (
-    <CartContext.Provider value={{ cart, addToCart, removeFromCart, updateQuantity, clearCart, cartTotal, cartCount }}>
+    <CartContext.Provider value={{ cart, addToCart, removeFromCart, updateQuantity, clearCart, cartTotal, cartCount, getItemPrice }}>
       {children}
     </CartContext.Provider>
   );

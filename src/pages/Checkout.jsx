@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
 import Navbar from '../components/Navbar';
@@ -7,11 +7,13 @@ import SuccessModal from '../components/SuccessModal';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { formatPrice } from '../lib/format';
+import { generateSignature } from '../utils/payfast';
 
 const DELIVERY_FEE = Number(import.meta.env.VITE_DELIVERY_FEE) || 99;
+const enableEcommerce = import.meta.env.VITE_ENABLE_ECOMMERCE === 'true';
 
 const Checkout = () => {
-  const { cart, cartTotal, clearCart } = useCart();
+  const { cart, cartTotal, clearCart, getItemPrice } = useCart();
   const { user, loading: authLoading, signInWithGoogle, signOut, isConfigured: authConfigured } = useAuth();
   const [loading, setLoading] = useState(false);
   const [reserved, setReserved] = useState(false);
@@ -20,6 +22,11 @@ const Checkout = () => {
   const subtotal = cartTotal;
   const delivery = cart.length > 0 ? DELIVERY_FEE : 0;
   const total = subtotal + delivery;
+
+  const hasOutOfStockItems = useMemo(
+    () => cart.some((item) => item?.isPreOrder || (item?.quantityAvailable ?? 0) <= 0),
+    [cart]
+  );
 
   const [formData, setFormData] = useState({
     name_first: '',
@@ -47,6 +54,73 @@ const Checkout = () => {
 
   const handleInputChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handlePayment = (e) => {
+    e.preventDefault();
+    setError('');
+
+    if (!formData.name_first?.trim() || !formData.name_last?.trim() || !formData.email_address?.trim()) {
+      setError('Please enter your first name, last name, and email before paying.');
+      return;
+    }
+
+    try {
+      const isSandbox = import.meta.env.VITE_PAYFAST_SANDBOX === 'true';
+      const merchantId = import.meta.env.VITE_PAYFAST_MERCHANT_ID;
+      const merchantKey = import.meta.env.VITE_PAYFAST_MERCHANT_KEY;
+      const passPhrase = import.meta.env.VITE_PAYFAST_PASSPHRASE || (isSandbox ? 'jt7NOE43FZPn' : '');
+
+      console.log('Is Sandbox:', isSandbox);
+
+      if (!merchantId || !merchantKey) {
+        setError('PayFast is not configured. Please use Place Reservation.');
+        return;
+      }
+
+      const origin = window.location.origin;
+      const data = {
+        merchant_id: merchantId,
+        merchant_key: merchantKey,
+        return_url: `${origin}/success`,
+        cancel_url: `${origin}/checkout`,
+        notify_url: `${origin}/.netlify/functions/itn-listener`,
+        name_first: formData.name_first?.trim() || 'Guest',
+        name_last: formData.name_last?.trim() || 'User',
+        email_address: formData.email_address?.trim() || '',
+        m_payment_id: Date.now().toString(),
+        amount: total.toFixed(2),
+        item_name: 'Al-Ameen Caps Order',
+      };
+
+      const signature = generateSignature(data, passPhrase || null);
+      data.signature = signature;
+
+      console.log('PayFast Data:', data);
+      console.log('Generated Signature:', signature);
+
+      const form = document.createElement('form');
+      form.method = 'POST';
+      form.action = isSandbox
+        ? 'https://sandbox.payfast.co.za/eng/process'
+        : 'https://www.payfast.co.za/eng/process';
+
+      Object.keys(data).forEach((key) => {
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = key;
+        input.value = String(data[key]);
+        form.appendChild(input);
+      });
+
+      document.body.appendChild(form);
+      form.submit();
+      document.body.removeChild(form);
+    } catch (err) {
+      console.error('PayFast handlePayment error:', err);
+      alert(`PayFast error: ${err?.message || err}`);
+      setError(err?.message || 'Payment submission failed. Check the console for details.');
+    }
   };
 
   const handleReservation = async (e) => {
@@ -102,7 +176,7 @@ const Checkout = () => {
         {cart.length === 0 && (
           <div className="mb-6 p-6 bg-primary/5 border border-accent/30 rounded-lg text-center max-w-md mx-auto">
             <p className="font-sans text-primary font-medium">Your cart is empty.</p>
-            <p className="mt-1 font-sans text-primary/70 text-sm">Add items from the shop to reserve.</p>
+            <p className="mt-1 font-sans text-primary/70 text-sm">Add items from the shop to checkout.</p>
             <Link to="/shop" className="inline-block mt-3 text-accent font-semibold hover:underline font-sans">Go to Shop →</Link>
           </div>
         )}
@@ -143,11 +217,11 @@ const Checkout = () => {
             )}
             {user && (
               <p className="font-sans text-accent font-medium text-center mb-4">
-                Welcome back, {formData.name_first || (user.user_metadata?.full_name || "").trim().split(/\s+/)[0] || user.email?.split("@")[0] || "there"}. We&apos;ve pre-filled your details for a faster reservation.
+                Welcome back, {formData.name_first || (user.user_metadata?.full_name || "").trim().split(/\s+/)[0] || user.email?.split("@")[0] || "there"}. We&apos;ve pre-filled your details for a faster checkout.
               </p>
             )}
             <h2 className="font-serif text-xl font-semibold text-primary mb-4 text-center">
-              {user ? "Confirming your reservation" : "Reservation Details"}
+              Customer Details
             </h2>
             <form onSubmit={handleReservation} className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
@@ -221,15 +295,35 @@ const Checkout = () => {
 
               {error && <p className="font-sans text-red-600 text-sm text-center">{error}</p>}
 
-              <button
-                type="submit"
-                disabled={loading || cart.length === 0}
-                className="btn-primary font-sans w-full py-4 text-base mt-6 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0"
-              >
-                {loading ? 'Placing Reservation...' : 'Place Reservation'}
-              </button>
+              {!enableEcommerce || hasOutOfStockItems ? (
+                <>
+                  {enableEcommerce && (
+                    <p className="font-sans text-primary/70 text-sm mt-4">Contains pre-order items. Pay when stock arrives.</p>
+                  )}
+                  <button
+                    type="submit"
+                    disabled={loading || cart.length === 0}
+                    className="btn-primary font-sans w-full py-4 text-base mt-4 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0"
+                  >
+                    {loading ? 'Placing Reservation...' : 'Place Reservation'}
+                  </button>
+                </>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handlePayment}
+                  disabled={loading || cart.length === 0}
+                  className="btn-primary font-sans w-full py-4 text-base mt-6 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0"
+                >
+                  Pay with PayFast
+                </button>
+              )}
               <p className="font-sans mt-3 text-center text-xs text-primary/60">
-                No payment now. We will contact you when your reserved items arrive.
+                {!enableEcommerce
+                  ? 'No payment now. We will contact you when your reserved items arrive.'
+                  : hasOutOfStockItems
+                    ? 'Reserve your pre-order items. We will contact you when stock arrives to arrange payment and delivery.'
+                    : 'Secure payment via PayFast. We will ship your order after payment confirmation.'}
               </p>
             </form>
           </div>
@@ -237,13 +331,21 @@ const Checkout = () => {
           <div className="bg-primary/5 p-6 rounded-lg h-fit border border-black/5">
             <h2 className="font-serif text-xl font-semibold text-primary mb-4 text-center">Order Summary</h2>
             {cart.length === 0 ? (
-              <p className="font-sans text-primary/70">Your cart is empty.</p>
+              <>
+                <p className="font-sans text-primary/70">Your cart is empty.</p>
+                <Link
+                  to="/shop"
+                  className="block w-full py-3.5 mt-4 text-center font-sans font-medium rounded border-2 border-accent text-accent hover:bg-accent hover:text-primary transition-colors"
+                >
+                  Continue Shopping
+                </Link>
+              </>
             ) : (
               <>
                 {cart.map((item, i) => (
                   <div key={item.id ?? i} className="flex justify-between py-2 border-b border-black/10 font-sans">
                     <span className="text-primary">{item.name} (x{item.quantity || 1})</span>
-                    <span className="font-semibold text-primary">{formatPrice(item.price * (item.quantity || 1))}</span>
+                    <span className="font-semibold text-primary">{formatPrice(getItemPrice(item) * (item.quantity || 1))}</span>
                   </div>
                 ))}
                 <div className="flex justify-between py-2 border-b border-black/10 font-sans">
@@ -258,6 +360,12 @@ const Checkout = () => {
                   <span className="text-primary">Total</span>
                   <span className="text-accent">{formatPrice(total)}</span>
                 </div>
+                <Link
+                  to="/shop"
+                  className="block w-full py-3.5 mt-4 text-center font-sans font-medium rounded border-2 border-accent text-accent hover:bg-accent hover:text-primary transition-colors"
+                >
+                  Continue Shopping
+                </Link>
               </>
             )}
           </div>

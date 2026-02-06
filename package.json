@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.94.1",
+    "crypto-js": "^4.2.0",
     "framer-motion": "^11.11.17",
     "lucide-react": "^0.460.0",
     "nodemailer": "^8.0.0",
