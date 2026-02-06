@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { CartProvider } from "./context/CartContext";
+import { AuthProvider } from "./context/AuthContext";
 import Home from "./pages/Home";
 import Shop from "./pages/Shop";
 import About from "./pages/About";
@@ -11,12 +12,14 @@ import ProductDetails from "./pages/ProductDetails";
 import Checkout from "./pages/Checkout";
 import Success from "./pages/Success";
 import Cancel from "./pages/Cancel";
+import Account from "./pages/Account";
 import NotFound from "./pages/NotFound";
 
 function App() {
   return (
-    <CartProvider>
-      <BrowserRouter>
+    <AuthProvider>
+      <CartProvider>
+        <BrowserRouter>
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/shop" element={<Shop />} />
@@ -29,10 +32,12 @@ function App() {
           <Route path="/checkout" element={<Checkout />} />
           <Route path="/success" element={<Success />} />
           <Route path="/cancel" element={<Cancel />} />
+          <Route path="/account" element={<Account />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
     </CartProvider>
+    </AuthProvider>
   );
 }
 

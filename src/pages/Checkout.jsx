@@ -1,28 +1,23 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
+import SuccessModal from '../components/SuccessModal';
 import { useCart } from '../context/CartContext';
+import { useAuth } from '../context/AuthContext';
 
 const DELIVERY_FEE = Number(import.meta.env.VITE_DELIVERY_FEE) || 99;
 
 const Checkout = () => {
-  const { cart, cartTotal } = useCart();
+  const { cart, cartTotal, clearCart } = useCart();
+  const { user, loading: authLoading, signInWithGoogle, signOut, isConfigured: authConfigured } = useAuth();
   const [loading, setLoading] = useState(false);
+  const [reserved, setReserved] = useState(false);
+  const [reservedName, setReservedName] = useState('');
+  const [error, setError] = useState('');
   const subtotal = cartTotal;
   const delivery = cart.length > 0 ? DELIVERY_FEE : 0;
   const total = subtotal + delivery;
-
-  // 1. Get Environment Variables
-  const isSandbox = import.meta.env.VITE_PAYFAST_SANDBOX === 'true';
-  const merchantId = import.meta.env.VITE_PAYFAST_MERCHANT_ID;
-  const merchantKey = import.meta.env.VITE_PAYFAST_MERCHANT_KEY;
-  const appUrl = import.meta.env.VITE_APP_URL;
-
-  // 2. Determine PayFast URL (Sandbox vs Live)
-  const payfastUrl = isSandbox
-    ? 'https://sandbox.payfast.co.za/eng/process'
-    : 'https://www.payfast.co.za/eng/process';
 
   const [formData, setFormData] = useState({
     name_first: '',
@@ -35,79 +30,120 @@ const Checkout = () => {
     postal_code: ''
   });
 
+  // Auto-fill form from signed-in user (only empty fields)
+  useEffect(() => {
+    if (!user) return;
+    const fullName = user.user_metadata?.full_name || user.email?.split('@')[0] || '';
+    const parts = fullName.trim().split(/\s+/);
+    setFormData((prev) => ({
+      ...prev,
+      name_first: prev.name_first || parts[0] || '',
+      name_last: prev.name_last || parts.slice(1).join(' ') || '',
+      email_address: prev.email_address || user.email || '',
+    }));
+  }, [user?.id]);
+
   const handleInputChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handlePayment = (e) => {
+  const handleReservation = async (e) => {
     e.preventDefault();
+    setError('');
     setLoading(true);
 
-    // 3. Create the Hidden Form programmatically
-    const form = document.createElement('form');
-    form.method = 'POST';
-    form.action = payfastUrl;
+    try {
+      const res = await fetch('/.netlify/functions/reservation', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          formData,
+          cart,
+          total,
+          marketing_opt_in: true,
+        }),
+      });
 
-    // 4. Data to send to PayFast (amount includes delivery)
-    const data = {
-      merchant_id: merchantId,
-      merchant_key: merchantKey,
-      amount: total.toFixed(2),
-      item_name: 'Al-Ameen Caps Order',
-
-      // Buyer & shipping (PayFast passes through for your records / ITN)
-      name_first: formData.name_first,
-      name_last: formData.name_last,
-      email_address: formData.email_address,
-      cell_number: formData.cell_number,
-      address_line_1: formData.address_line_1 || undefined,
-      address_line_2: formData.address_line_2 || undefined,
-      city: formData.city || undefined,
-      postal_code: formData.postal_code || undefined,
-
-      // Return URLs
-      return_url: `${appUrl}/success`,
-      cancel_url: `${appUrl}/cancel`,
-      notify_url: `${appUrl}/.netlify/functions/itn-listener`,
-
-      // Tracking
-      m_payment_id: `Order-${Date.now()}`
-    };
-    // Remove undefined so we don't send empty strings to PayFast
-    Object.keys(data).forEach((k) => data[k] === undefined && delete data[k]);
-
-    // 5. Append inputs to form
-    for (const key in data) {
-      const input = document.createElement('input');
-      input.type = 'hidden';
-      input.name = key;
-      input.value = data[key];
-      form.appendChild(input);
+      if (!res.ok) {
+        const msg = await res.text();
+        throw new Error(msg || 'Reservation failed');
+      }
+      setReservedName([formData.name_first, formData.name_last].filter(Boolean).join(' ') || 'Valued Customer');
+      setReserved(true);
+      clearCart();
+    } catch (err) {
+      setError(err.message || 'Something went wrong. Please try again or contact us.');
+    } finally {
+      setLoading(false);
     }
-
-    // 6. Submit!
-    document.body.appendChild(form);
-    form.submit();
   };
+
+  if (reserved) {
+    return (
+      <>
+        <div className="min-h-screen flex flex-col">
+          <Navbar />
+          <main className="flex-1 pt-32 pb-24" />
+          <Footer />
+        </div>
+        <SuccessModal customerName={reservedName} />
+      </>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
-      <main className="flex-1 max-w-4xl mx-auto p-6 text-primary py-24">
-        <h1 className="text-3xl font-serif font-bold text-accent mb-8">Secure Checkout</h1>
+      <main className="flex-1 max-w-4xl mx-auto w-full px-6 text-primary pt-32 pb-24">
+        <h1 className="font-serif text-3xl font-bold text-accent mb-8 text-center">Secure Checkout</h1>
 
         {cart.length === 0 && (
-          <div className="mb-6 p-4 bg-primary/5 border border-accent/30 rounded-lg text-center">
-            <p className="text-primary font-medium">Your cart is empty.</p>
-            <p className="mt-1 text-primary/70 text-sm">Add items from the shop to checkout.</p>
-            <Link to="/shop" className="inline-block mt-3 text-accent font-semibold hover:underline">Go to Shop →</Link>
+          <div className="mb-6 p-6 bg-primary/5 border border-accent/30 rounded-lg text-center max-w-md mx-auto">
+            <p className="font-sans text-primary font-medium">Your cart is empty.</p>
+            <p className="mt-1 font-sans text-primary/70 text-sm">Add items from the shop to reserve.</p>
+            <Link to="/shop" className="inline-block mt-3 text-accent font-semibold hover:underline font-sans">Go to Shop →</Link>
           </div>
         )}
-        <div className="grid md:grid-cols-2 gap-8">
-          {/* LEFT: Shipping Form */}
+
+        <div className="grid md:grid-cols-2 gap-8 items-start max-w-4xl mx-auto">
           <div className="bg-secondary p-6 shadow-premium rounded-lg border border-accent/20">
-            <h2 className="text-xl font-serif font-semibold text-primary mb-4">Shipping Details</h2>
-            <form onSubmit={handlePayment} className="space-y-4">
+            {authConfigured && (
+              <div className="mb-6 text-center">
+                {user ? (
+                  <div className="flex items-center justify-center gap-2">
+                    {user.user_metadata?.avatar_url && (
+                      <img src={user.user_metadata.avatar_url} alt="" className="w-8 h-8 rounded-full" />
+                    )}
+                    <span className="font-sans text-sm text-primary/80">{user.email}</span>
+                    <button
+                      type="button"
+                      onClick={signOut}
+                      className="font-sans text-xs text-accent hover:underline"
+                    >
+                      Sign out
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={signInWithGoogle}
+                    disabled={authLoading}
+                    className="font-sans w-full py-2.5 px-4 rounded border-2 border-black/20 hover:border-accent hover:bg-accent/10 transition-colors text-sm font-medium disabled:opacity-50"
+                  >
+                    {authLoading ? 'Loading...' : 'Sign in with Google'}
+                  </button>
+                )}
+              </div>
+            )}
+            {user && (
+              <p className="font-sans text-accent font-medium text-center mb-4">
+                Welcome back, {formData.name_first || (user.user_metadata?.full_name || "").trim().split(/\s+/)[0] || user.email?.split("@")[0] || "there"}. We&apos;ve pre-filled your details for a faster reservation.
+              </p>
+            )}
+            <h2 className="font-serif text-xl font-semibold text-primary mb-4 text-center">
+              {user ? "Confirming your reservation" : "Reservation Details"}
+            </h2>
+            <form onSubmit={handleReservation} className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <input
                   name="name_first"
@@ -115,7 +151,7 @@ const Checkout = () => {
                   value={formData.name_first}
                   onChange={handleInputChange}
                   required
-                  className="w-full p-3 border border-black/20 rounded focus:border-accent focus:ring-1 focus:ring-accent outline-none"
+                  className="font-sans w-full p-3 border border-black/20 rounded focus:border-accent focus:ring-1 focus:ring-accent outline-none"
                 />
                 <input
                   name="name_last"
@@ -123,7 +159,7 @@ const Checkout = () => {
                   value={formData.name_last}
                   onChange={handleInputChange}
                   required
-                  className="w-full p-3 border border-black/20 rounded focus:border-accent focus:ring-1 focus:ring-accent outline-none"
+                  className="font-sans w-full p-3 border border-black/20 rounded focus:border-accent focus:ring-1 focus:ring-accent outline-none"
                 />
               </div>
               <input
@@ -133,7 +169,7 @@ const Checkout = () => {
                 value={formData.email_address}
                 onChange={handleInputChange}
                 required
-                className="w-full p-3 border border-black/20 rounded focus:border-accent focus:ring-1 focus:ring-accent outline-none"
+                className="font-sans w-full p-3 border border-black/20 rounded focus:border-accent focus:ring-1 focus:ring-accent outline-none"
               />
               <input
                 name="cell_number"
@@ -141,7 +177,7 @@ const Checkout = () => {
                 value={formData.cell_number}
                 onChange={handleInputChange}
                 required
-                className="w-full p-3 border border-black/20 rounded focus:border-accent focus:ring-1 focus:ring-accent outline-none"
+                className="font-sans w-full p-3 border border-black/20 rounded focus:border-accent focus:ring-1 focus:ring-accent outline-none"
               />
               <input
                 name="address_line_1"
@@ -149,14 +185,14 @@ const Checkout = () => {
                 value={formData.address_line_1}
                 onChange={handleInputChange}
                 required
-                className="w-full p-3 border border-black/20 rounded focus:border-accent focus:ring-1 focus:ring-accent outline-none"
+                className="font-sans w-full p-3 border border-black/20 rounded focus:border-accent focus:ring-1 focus:ring-accent outline-none"
               />
               <input
                 name="address_line_2"
                 placeholder="Address line 2 (optional)"
                 value={formData.address_line_2}
                 onChange={handleInputChange}
-                className="w-full p-3 border border-black/20 rounded focus:border-accent focus:ring-1 focus:ring-accent outline-none"
+                className="font-sans w-full p-3 border border-black/20 rounded focus:border-accent focus:ring-1 focus:ring-accent outline-none"
               />
               <div className="grid grid-cols-2 gap-4">
                 <input
@@ -165,7 +201,7 @@ const Checkout = () => {
                   value={formData.city}
                   onChange={handleInputChange}
                   required
-                  className="w-full p-3 border border-black/20 rounded focus:border-accent focus:ring-1 focus:ring-accent outline-none"
+                  className="font-sans w-full p-3 border border-black/20 rounded focus:border-accent focus:ring-1 focus:ring-accent outline-none"
                 />
                 <input
                   name="postal_code"
@@ -173,43 +209,46 @@ const Checkout = () => {
                   value={formData.postal_code}
                   onChange={handleInputChange}
                   required
-                  className="w-full p-3 border border-black/20 rounded focus:border-accent focus:ring-1 focus:ring-accent outline-none"
+                  className="font-sans w-full p-3 border border-black/20 rounded focus:border-accent focus:ring-1 focus:ring-accent outline-none"
                 />
               </div>
+
+              {error && <p className="font-sans text-red-600 text-sm text-center">{error}</p>}
 
               <button
                 type="submit"
                 disabled={loading || cart.length === 0}
-                className="btn-primary w-full py-4 text-base mt-6 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0"
+                className="btn-primary font-sans w-full py-4 text-base mt-6 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0"
               >
-                {loading ? 'Redirecting to PayFast...' : `Pay R${total.toFixed(2)}`}
+                {loading ? 'Placing Reservation...' : 'Place Reservation'}
               </button>
-              <p className="mt-3 text-center text-xs text-primary/60">Secure payment via PayFast. You will be redirected to complete payment.</p>
+              <p className="font-sans mt-3 text-center text-xs text-primary/60">
+                No payment now. We will contact you when your reserved items arrive.
+              </p>
             </form>
           </div>
 
-          {/* RIGHT: Order Summary */}
           <div className="bg-primary/5 p-6 rounded-lg h-fit border border-black/5">
-            <h2 className="text-xl font-serif font-semibold text-primary mb-4">Order Summary</h2>
+            <h2 className="font-serif text-xl font-semibold text-primary mb-4 text-center">Order Summary</h2>
             {cart.length === 0 ? (
-              <p className="text-primary/70">Your cart is empty.</p>
+              <p className="font-sans text-primary/70">Your cart is empty.</p>
             ) : (
               <>
                 {cart.map((item, i) => (
-                  <div key={item.id ?? i} className="flex justify-between py-2 border-b border-black/10">
+                  <div key={item.id ?? i} className="flex justify-between py-2 border-b border-black/10 font-sans">
                     <span className="text-primary">{item.name} (x{item.quantity || 1})</span>
                     <span className="font-semibold text-primary">R{(item.price * (item.quantity || 1)).toFixed(2)}</span>
                   </div>
                 ))}
-                <div className="flex justify-between py-2 border-b border-black/10">
+                <div className="flex justify-between py-2 border-b border-black/10 font-sans">
                   <span className="text-primary">Subtotal</span>
                   <span className="font-semibold text-primary">R{subtotal.toFixed(2)}</span>
                 </div>
-                <div className="flex justify-between py-2 border-b border-black/10">
+                <div className="flex justify-between py-2 border-b border-black/10 font-sans">
                   <span className="text-primary">Delivery</span>
                   <span className="font-semibold text-primary">R{delivery.toFixed(2)}</span>
                 </div>
-                <div className="flex justify-between mt-4 text-xl font-bold border-t border-black/10 pt-4">
+                <div className="flex justify-between mt-4 text-xl font-bold border-t border-black/10 pt-4 font-sans">
                   <span className="text-primary">Total</span>
                   <span className="text-accent">R{total.toFixed(2)}</span>
                 </div>

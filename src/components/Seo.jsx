@@ -13,7 +13,8 @@ import {
 
 const BASE_URL = getBaseUrl();
 const SITE_NAME = 'Al-Ameen Caps';
-const DEFAULT_DESCRIPTION = 'Premium handcrafted Islamic headwear. Kufi caps, Azhari caps, Na\'lain caps, Fez, and more. South Africa. Restoring the Crown of the Believer.';
+const DEFAULT_TITLE = 'Premium Nalain Caps & Royal Fezzes';
+const DEFAULT_DESCRIPTION = 'Exquisite, handcrafted Islamic headwear. From Nalain caps to Azhari hard caps, Al-Ameen Caps restores the crown of the believer.';
 
 export default function Seo({
   title,
@@ -28,7 +29,7 @@ export default function Seo({
 
   useEffect(() => {
     // Title
-    document.title = title ? `${title} | ${SITE_NAME}` : `${SITE_NAME} | Premium Islamic Headwear`;
+    document.title = title ? `${title} | ${SITE_NAME}` : `${SITE_NAME} | ${DEFAULT_TITLE}`;
 
     // Meta description
     let metaDesc = document.querySelector('meta[name="description"]');
@@ -50,7 +51,7 @@ export default function Seo({
 
     // Open Graph
     const ogTags = [
-      ['og:title', title || SITE_NAME],
+      ['og:title', title ? `${title} | ${SITE_NAME}` : `${SITE_NAME} | ${DEFAULT_TITLE}`],
       ['og:description', description.slice(0, 160)],
       ['og:url', fullUrl],
       ['og:image', ogImage],
@@ -70,7 +71,7 @@ export default function Seo({
     // Twitter Card
     const twTags = [
       ['twitter:card', 'summary_large_image'],
-      ['twitter:title', title || SITE_NAME],
+      ['twitter:title', title ? `${title} | ${SITE_NAME}` : `${SITE_NAME} | ${DEFAULT_TITLE}`],
       ['twitter:description', description.slice(0, 160)],
       ['twitter:image', ogImage],
     ];

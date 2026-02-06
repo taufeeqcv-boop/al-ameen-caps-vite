@@ -36,7 +36,7 @@ export default function Shop() {
         breadcrumbs={[{ name: "Home", url: "/" }, { name: "Shop", url: null }]}
       />
       <Navbar />
-      <main className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24">
+      <main className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-32 pb-24">
         <h1 className="font-serif text-3xl font-semibold text-primary mb-10">Shop the Collection</h1>
         {loading ? (
           <p className="text-primary/70">Loading...</p>

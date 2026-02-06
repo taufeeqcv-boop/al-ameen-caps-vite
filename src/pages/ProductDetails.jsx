@@ -47,7 +47,7 @@ export default function ProductDetails() {
     return (
       <div className="min-h-screen flex flex-col">
         <Navbar />
-        <main className="flex-1 max-w-7xl mx-auto px-4 py-24">
+        <main className="flex-1 max-w-7xl mx-auto px-4 pt-32 pb-24">
           <p className="text-primary/70">Loading...</p>
         </main>
         <Footer />
@@ -70,7 +70,7 @@ export default function ProductDetails() {
         ]}
       />
       <Navbar />
-      <main className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24">
+      <main className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-32 pb-24">
         <motion.div
           className="grid md:grid-cols-2 gap-12 items-start"
           initial={{ opacity: 0 }}
@@ -106,6 +106,9 @@ export default function ProductDetails() {
               <p className="mt-2 text-accent text-2xl font-semibold">R {(Number(product.price) || 0).toFixed(2)}</p>
             )}
             <div className="mt-6 text-primary/80 whitespace-pre-line leading-relaxed">{product.description || "Description coming soon."}</div>
+            <p className="mt-6 text-sm text-primary/70 italic border-l-2 border-accent/50 pl-4">
+              To ensure the highest quality, our items are handcrafted and imported. By reserving now, you secure your place in our first delivery queue.
+            </p>
           </div>
         </motion.div>
       </main>

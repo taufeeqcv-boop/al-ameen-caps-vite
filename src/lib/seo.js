@@ -3,7 +3,7 @@
  * Compatible with Netlify and South African ecommerce
  */
 
-const BASE_URL = import.meta.env.VITE_APP_URL || 'https://alameencaps.netlify.app';
+const BASE_URL = import.meta.env.VITE_SITE_URL || import.meta.env.VITE_APP_URL || 'https://al-ameen-caps-app.netlify.app';
 
 export function getBaseUrl() {
   return BASE_URL.replace(/\/$/, '');
@@ -23,7 +23,9 @@ export function injectJsonLd(json) {
 /**
  * Product schema for product pages (ZAR, South Africa)
  */
-export function getProductSchema(product, shippingCostZar = 99) {
+const DEFAULT_DELIVERY_FEE = Number(import.meta.env.VITE_DELIVERY_FEE) || 99;
+
+export function getProductSchema(product, shippingCostZar = DEFAULT_DELIVERY_FEE) {
   const url = `${getBaseUrl()}/product/${product.id}`;
   const imageUrl = product.imageURL?.startsWith('http')
     ? product.imageURL

@@ -36,13 +36,13 @@ Do **not** put `PAYFAST_PASSPHRASE` or email credentials in your frontend `.env`
 
 Checkout already sends:
 
-- `notify_url: ${VITE_APP_URL}/.netlify/functions/itn-listener`
+- `notify_url: ${VITE_SITE_URL}/.netlify/functions/itn-listener`
 
-So when `VITE_APP_URL` is your live site (e.g. `https://alameencaps.netlify.app`), PayFast will POST ITNs to:
+So when `VITE_SITE_URL` is your live site (e.g. `https://al-ameen-caps-app.netlify.app`), PayFast will POST ITNs to:
 
-- `https://alameencaps.netlify.app/.netlify/functions/itn-listener`
+- `https://al-ameen-caps-app.netlify.app/.netlify/functions/itn-listener`
 
-No change needed in code if your live URL is set correctly in Netlify (or in build env) as `VITE_APP_URL`.
+No change needed in code if your live URL is set correctly in Netlify (or in build env) as `VITE_SITE_URL`.
 
 ## 4. PayFast passphrase
 

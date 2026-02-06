@@ -1,12 +1,14 @@
 import { Link } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
+import Seo from "../components/Seo";
 
 export default function Shipping() {
   return (
     <div className="min-h-screen flex flex-col">
+      <Seo title="Shipping & Delivery" description="Shipping and delivery information for Al-Ameen Caps. Nationwide delivery across South Africa." url="/shipping" />
       <Navbar />
-      <main className="flex-1 pt-24 pb-16">
+      <main className="flex-1 pt-32 pb-16">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
           <h1 className="font-serif text-3xl md:text-4xl font-semibold text-primary mb-2">Shipping & Delivery</h1>
           <p className="text-primary/60 text-sm mb-10">How we get your order to you</p>

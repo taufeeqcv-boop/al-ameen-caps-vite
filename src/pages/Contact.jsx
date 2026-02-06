@@ -2,6 +2,7 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
+import Seo from "../components/Seo";
 
 const FORM_ACTION = import.meta.env.VITE_CONTACT_FORM_ACTION || "";
 const CONTACT_EMAIL = import.meta.env.VITE_CONTACT_EMAIL || "";
@@ -19,8 +20,13 @@ export default function Contact() {
 
   return (
     <div className="min-h-screen flex flex-col">
+      <Seo
+        title="Contact"
+        description="Contact Al-Ameen Caps. Questions about Islamic headwear, orders, or our collection? We're here to help."
+        url="/contact"
+      />
       <Navbar />
-      <main className="flex-1 pt-24 pb-16">
+      <main className="flex-1 pt-32 pb-16">
         <div className="max-w-xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.h1
             className="font-serif text-4xl font-semibold text-primary text-center mb-2"

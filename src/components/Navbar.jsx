@@ -2,10 +2,11 @@
 
 import { Link } from "react-router-dom";
 import { useCart } from "../context/CartContext";
-import { useState } from "react";
+import { useAuth } from "../context/AuthContext";
+import { useState, useRef, useEffect } from "react";
 import CartSidebar from "./CartSidebar";
 import logoImg from "../assets/logo.png";
-import { Menu, X } from "lucide-react";
+import { Menu, X, ChevronDown } from "lucide-react";
 
 const navLinks = [
   { to: "/", label: "Home" },
@@ -14,14 +15,38 @@ const navLinks = [
   { to: "/contact", label: "Contact" },
 ];
 
+function getFirstName(user) {
+  const full = user?.user_metadata?.full_name || user?.email?.split("@")[0] || "";
+  return full.trim().split(/\s+/)[0] || "there";
+}
+
 export default function Navbar() {
   const { cartCount } = useCart();
+  const { user, signOut, isConfigured: authConfigured } = useAuth();
   const [cartOpen, setCartOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const userMenuRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(e.target)) {
+        setUserMenuOpen(false);
+      }
+    };
+    document.addEventListener("click", handleClickOutside);
+    return () => document.removeEventListener("click", handleClickOutside);
+  }, []);
+
+  const firstName = user ? getFirstName(user) : "";
 
   return (
     <>
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-primary border-b-2 border-accent shadow-lg">
+      <header className="fixed top-0 left-0 right-0 z-50">
+        <div className="bg-accent text-primary text-center py-2 px-4 text-sm font-medium">
+          Inaugural Collection Arriving Soon — Reserving Orders Now.
+        </div>
+        <nav className="bg-primary border-b-2 border-accent shadow-lg">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between min-h-[5.5rem] py-2">
             <Link to="/" className="flex items-center gap-3 flex-shrink-0">
@@ -47,6 +72,45 @@ export default function Navbar() {
               <Link to="/checkout" className="hidden sm:inline-flex px-5 py-2.5 text-sm font-semibold rounded bg-accent text-primary hover:bg-accent-light transition-colors">
                 Checkout
               </Link>
+              {authConfigured && (
+                user ? (
+                  <div className="relative" ref={userMenuRef}>
+                    <button
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); setUserMenuOpen((o) => !o); }}
+                      className="hidden sm:flex items-center gap-1 px-3 py-2 rounded text-accent hover:bg-accent/10 transition-colors font-medium"
+                    >
+                      <span>Assalamu alaikum, {firstName}</span>
+                      <ChevronDown className={`w-4 h-4 transition-transform ${userMenuOpen ? "rotate-180" : ""}`} />
+                    </button>
+                    {userMenuOpen && (
+                      <div className="absolute right-0 top-full mt-1 py-1 w-44 bg-secondary border border-accent/30 rounded shadow-lg z-50">
+                        <Link
+                          to="/account"
+                          onClick={() => setUserMenuOpen(false)}
+                          className="block px-4 py-2 text-primary hover:bg-accent/10 font-medium"
+                        >
+                          Account
+                        </Link>
+                        <button
+                          type="button"
+                          onClick={() => { signOut(); setUserMenuOpen(false); }}
+                          className="w-full text-left px-4 py-2 text-primary hover:bg-accent/10 font-medium"
+                        >
+                          Sign Out
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <Link
+                    to="/checkout"
+                    className="hidden sm:inline-flex px-4 py-2 text-sm font-medium text-accent hover:underline"
+                  >
+                    Sign In
+                  </Link>
+                )
+              )}
               <button
                 type="button"
                 onClick={() => setMenuOpen((o) => !o)}
@@ -78,10 +142,25 @@ export default function Navbar() {
               >
                 Checkout
               </Link>
+              {authConfigured && user && (
+                <div className="mt-2 py-2 border-t border-accent/30">
+                  <p className="text-accent font-medium text-sm">Assalamu alaikum, {firstName}</p>
+                  <Link to="/account" onClick={() => setMenuOpen(false)} className="block py-2 text-secondary hover:text-accent">Account</Link>
+                  <button type="button" onClick={() => { signOut(); setMenuOpen(false); }} className="block py-2 text-secondary hover:text-accent w-full text-left">
+                    Sign Out
+                  </button>
+                </div>
+              )}
+              {authConfigured && !user && (
+                <Link to="/checkout" onClick={() => setMenuOpen(false)} className="block py-2 text-accent font-medium">
+                  Sign In
+                </Link>
+              )}
             </div>
           </div>
         )}
       </nav>
+      </header>
       <CartSidebar isOpen={cartOpen} onClose={() => setCartOpen(false)} />
     </>
   );

@@ -2,12 +2,18 @@ import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
+import Seo from "../components/Seo";
 
 export default function About() {
   return (
     <div className="min-h-screen flex flex-col">
+      <Seo
+        title="About"
+        description="Learn about Al-Ameen Caps — premium handcrafted Islamic headwear. Restoring the crown of the believer in South Africa."
+        url="/about"
+      />
       <Navbar />
-      <main className="flex-1 pt-24 pb-16">
+      <main className="flex-1 pt-32 pb-16">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.h1
             className="font-serif text-4xl md:text-5xl font-semibold text-primary text-center mb-4"

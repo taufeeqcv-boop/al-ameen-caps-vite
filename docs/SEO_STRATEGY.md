@@ -87,7 +87,7 @@ This ensures product links shared in SA show rich previews with image and price.
 
 | Variable | Purpose |
 |----------|---------|
-| `VITE_APP_URL` | Canonical base URL (e.g. https://alameencaps.co.za) |
+| `VITE_SITE_URL` | Canonical base URL (e.g. https://alameencaps.co.za) |
 | `VITE_SITE_NAME` | Al-Ameen Caps |
 | `VITE_SITE_DESCRIPTION` | Default meta description |
 

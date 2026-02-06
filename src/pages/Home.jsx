@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import Hero from "../components/Hero";
+import Seo from "../components/Seo";
 import { injectJsonLd, getLocalBusinessSchema, getWebSiteSchema } from "../lib/seo";
 
 export default function Home() {
@@ -17,8 +18,12 @@ export default function Home() {
 
   return (
     <div className="min-h-screen flex flex-col">
+      <Seo
+        url="/"
+        description="Exquisite, handcrafted Islamic headwear. From Nalain caps to Azhari hard caps, Al-Ameen Caps restores the crown of the believer. South Africa."
+      />
       <Navbar />
-      <main className="flex-1">
+      <main className="flex-1 pt-32">
         <Hero />
         <section className="bg-secondary py-16 px-4">
           <div className="max-w-4xl mx-auto text-center">

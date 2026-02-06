@@ -11,6 +11,32 @@ if (supabaseUrl && supabaseKey) {
 
 export { supabase };
 
+/** Upsert user profile (Name, Email, Avatar) and mark marketing_opt_in. Call after sign-in. */
+export async function upsertProfile(user) {
+  if (!supabase || !user?.id) return;
+  const fullName = user.user_metadata?.full_name || user.email?.split("@")[0] || "";
+  const parts = fullName.trim().split(/\s+/);
+  const nameFirst = parts[0] || "";
+  const nameLast = parts.slice(1).join(" ") || "";
+  try {
+    await supabase.from("profiles").upsert(
+      {
+        id: user.id,
+        email: user.email || "",
+        full_name: fullName,
+        name_first: nameFirst,
+        name_last: nameLast,
+        avatar_url: user.user_metadata?.avatar_url || null,
+        marketing_opt_in: true,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "id" }
+    );
+  } catch (err) {
+    console.error("Supabase upsertProfile:", err);
+  }
+}
+
 // Fetch All Products (Ordered by Price High-to-Low)
 export const getProducts = async () => {
   if (!supabase) return [];
