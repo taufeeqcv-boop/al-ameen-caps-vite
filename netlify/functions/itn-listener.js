@@ -65,7 +65,7 @@ function getEmailHtml(data) {
       <p>Thank you for your order. Your payment was successful and we have received your order.</p>
       <p><strong>Amount paid:</strong> <span class="amount">R ${amount}</span></p>
       <p>Fastway Couriers will deliver your order within 2–5 business days. We will send you tracking details once your parcel is dispatched.</p>
-      <p>If you have any questions, please reply to this email or use our <a href="${(process.env.VITE_SITE_URL || process.env.VITE_APP_URL || 'https://al-ameen-caps-app.netlify.app').replace(/\/$/, '')}/contact">Contact</a> page.</p>
+      <p>If you have any questions, please reply to this email or use our <a href="${(process.env.VITE_SITE_URL || process.env.VITE_APP_URL || 'https://al-ameen-caps.netlify.app').replace(/\/$/, '')}/contact">Contact</a> page.</p>
       <p>Jazakallah khair,<br><strong>Al-Ameen Caps</strong></p>
     </div>
     <div class="footer">

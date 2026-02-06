@@ -1,9 +1,9 @@
 # Al-Ameen Caps — robots.txt
-# https://al-ameen-caps-app.netlify.app — set VITE_SITE_URL for custom domain
+# https://al-ameen-caps.netlify.app — set VITE_SITE_URL for custom domain
 
 User-agent: *
 Allow: /
 Disallow: /admin
 Disallow: /success
 
-Sitemap: https://al-ameen-caps-app.netlify.app/sitemap.xml
+Sitemap: https://al-ameen-caps.netlify.app/sitemap.xml

@@ -3,7 +3,7 @@
  * Compatible with Netlify and South African ecommerce
  */
 
-const BASE_URL = import.meta.env.VITE_SITE_URL || import.meta.env.VITE_APP_URL || 'https://al-ameen-caps-app.netlify.app';
+const BASE_URL = import.meta.env.VITE_SITE_URL || import.meta.env.VITE_APP_URL || 'https://al-ameen-caps.netlify.app';
 
 export function getBaseUrl() {
   return BASE_URL.replace(/\/$/, '');
